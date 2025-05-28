@@ -1,0 +1,17 @@
+{
+    "name": "nawasena/fifo-helpers",
+    "description": "Generate Registration Number & Queue Number",
+    "type": "library",
+    "authors": [
+        {
+            "name": "Asep Ruswanda",
+            "email": "asepdeder@gmail.com"
+        }
+    ],
+    "autoload": {
+    "psr-4": {
+        "Nawasena\\Helpers\\": "src/"
+    }
+    },
+    "require": {}
+}

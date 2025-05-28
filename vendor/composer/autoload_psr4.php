@@ -6,5 +6,6 @@ $vendorDir = dirname(__DIR__);
 $baseDir = dirname($vendorDir);
 
 return array(
-    'Nawasena\\Helpers\\' => array($baseDir . '/src'),
+    'Nawasena\\RegistrationNumber\\' => array($baseDir . '/src'),
+    'Nawasena\\QueueNumber\\' => array($baseDir . '/src'),
 );

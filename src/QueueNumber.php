@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Helpers;
+namespace Nawasena\Helpers;
 
 use Illuminate\Support\Facades\DB;
 

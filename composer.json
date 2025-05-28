@@ -10,8 +10,7 @@
     ],
     "autoload": {
     "psr-4": {
-        "Nawasena\\RegistrationNumber\\": "src/",
-        "Nawasena\\QueueNumber\\": "src/"
+        "Nawasena\\Helpers\\": "src/"
     }
     },
     "require": {}

@@ -6,40 +6,37 @@ use Illuminate\Support\Facades\DB;
 
 class QueueNumber
 {
-    protected string $format;
-    protected string $table;
-    protected string $column;
-    protected int $padding;
-
-    public function __construct(string $table, string $column = 'registration_number', string $format = '{prefix}-{serial}', int $padding = 5)
+    public static function generate(array $params = []): string
     {
-        $this->format = $format;
-        $this->table = $table;
-        $this->column = $column;
-        $this->padding = $padding;
-    }
+        $table = $params['table'] ?? 'registrations';
+        $format = $params['format'] ?? '{serial}';
+        $column = $params['column'] ?? 'registration_numbers';
+        $columnDate = $params['columnDate'] ?? 'date';
+        $padding = $params['padding'] ?? 5;
 
-    public function generate(array $params = []): string
-    {
         $prefix = $params['prefix'] ?? 'REG';
-        $month = $params['month'] ?? date('m');
-        $latest = DB::table($this->table)
-            ->whereDate('created_at', date('Y-m-d'))
-            ->orderBy($this->column, 'desc')
-            ->value($this->column);
+        $date = $params['date'] ?? date('Y-m-d');
+
+
+        $prefix = $params['prefix'] ?? 'REG';
+        $date = $params['date'] ?? date('Y-m-d');
+        $latest = DB::table($table)
+            ->where($columnDate, $date)
+            ->orderBy($column, 'desc')
+            ->value($column);
         $serial = 1;
         if ($latest) {
-            preg_match('/(\d{'.$this->padding.'})$/', $latest, $matches);
+            preg_match('/(\d{'.$padding.'})$/', $latest, $matches);
             if (isset($matches[1])) {
                 $serial = (int)$matches[1] + 1;
             }
         }
-        $serialFormatted = str_pad($serial, $this->padding, '0', STR_PAD_LEFT);
+        $serialFormatted = str_pad($serial, $padding, '0', STR_PAD_LEFT);
         $replacements = [
             '{prefix}' => $prefix,
             '{serial}' => $serialFormatted,
         ];
 
-        return str_replace(array_keys($replacements), array_values($replacements), $this->format);
+        return str_replace(array_keys($replacements), array_values($replacements), $format);
     }
 }

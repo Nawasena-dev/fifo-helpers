@@ -6,48 +6,40 @@ use Illuminate\Support\Facades\DB;
 
 class RegistrationNumber
 {
-    protected string $format;
-    protected string $table;
-    protected string $column;
-    protected int $padding;
-
-    public function __construct(string $table, string $column = 'registration_number', string $format = '{prefix}-{year}-{serial}', int $padding = 5)
+    public static function generate(array $params = []): string
     {
-        $this->format = $format;
-        $this->table = $table;
-        $this->column = $column;
-        $this->padding = $padding;
-    }
+        $table = $params['table'] ?? 'registrations';
+        $format = $params['format'] ?? '{prefix}-{year}-{serial}';
+        $column = $params['column'] ?? 'registration_numbers';
+        $columnDate = $params['columnDate'] ?? 'date';
+        $padding = $params['padding'] ?? 5;
+        $resetBy = $params['resetBy'] ?? 'yearly';
 
-    public function generate(array $params = []): string
-    {
         $prefix = $params['prefix'] ?? 'REG';
-        $year = $params['year'] ?? date('Y');
-        $month = $params['month'] ?? date('m');
+        $date = $params['date'] ?? date('Y-m-d');
 
-        $latest = DB::table($this->table)
-            ->where($this->column, 'like', '%' . $year . '%')
-            ->orderBy($this->column, 'desc')
-            ->value($this->column);
-
-        $serial = 1;
-
+        // Generate date segment
+        $dateFormat = match ($resetBy) {
+            'daily' => Carbon::parse($date)->format('Ymd'),
+            'monthly' => Carbon::parse($date)->format('Ym'),
+            'yearly' => Carbon::parse($date)->format('Y'),
+            default => Carbon::parse($date)->format('Ymd'),
+        };
+        $base = str_replace(
+            ['{prefix}', '{ymd}', '{ym}', '{y}', '{serial}'],
+            [$prefix, Carbon::parse($date)->format('Ymd'), Carbon::parse($date)->format('Ym'), Carbon::parse($date)->format('Y'), ''],
+            $format
+        );
+        $latest = DB::table($table)
+            ->where($column, 'like', $base . '%')
+            ->orderByDesc($column)
+            ->first();
+        $lastNumber = 0;
         if ($latest) {
-            preg_match('/(\d{'.$this->padding.'})$/', $latest, $matches);
-            if (isset($matches[1])) {
-                $serial = (int)$matches[1] + 1;
-            }
+            preg_match('/(\d{'.$padding.'})$/', $latest->$column, $match);
+            $lastNumber = isset($match[1]) ? (int) $match[1] : 0;
         }
-
-        $serialFormatted = str_pad($serial, $this->padding, '0', STR_PAD_LEFT);
-
-        $replacements = [
-            '{prefix}' => $prefix,
-            '{year}' => $year,
-            '{month}' => $month,
-            '{serial}' => $serialFormatted,
-        ];
-
-        return str_replace(array_keys($replacements), array_values($replacements), $this->format);
+        $next = str_pad($lastNumber + 1, $padding, '0', STR_PAD_LEFT);
+        return str_replace('{serial}', $next, $base . $next);
     }
 }

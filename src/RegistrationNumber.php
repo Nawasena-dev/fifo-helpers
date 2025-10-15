@@ -31,16 +31,22 @@ class RegistrationNumber
             [$prefix, Carbon::parse($date)->format('Ymd'), Carbon::parse($date)->format('Ym'), Carbon::parse($date)->format('Y'), ''],
             $format
         );
-        $latest = DB::table($table)
-            ->where($column, 'like', $base . '%')
-            ->orderByDesc($column)
-            ->first();
-        $lastNumber = 0;
-        if ($latest) {
-            preg_match('/(\d{'.$padding.'})$/', $latest->$column, $match);
-            $lastNumber = isset($match[1]) ? (int) $match[1] : 0;
-        }
-        $next = str_pad($lastNumber + 1, $padding, '0', STR_PAD_LEFT);
-        return str_replace('{serial}', $next, $base . $next);
+        return DB::transaction(function () use ($table, $column, $columnDate, $date, $base, $padding) {
+            $latest = DB::table($table)
+                ->whereDate($columnDate, $date)
+                ->where($column, 'like', $base . '%')
+                ->orderByDesc($column)
+                ->lockForUpdate()
+                ->first();
+
+            $lastNumber = 0;
+            if ($latest) {
+                preg_match('/(\d{' . $padding . '})$/', $latest->$column, $match);
+                $lastNumber = isset($match[1]) ? (int) $match[1] : 0;
+            }
+
+            $next = str_pad($lastNumber + 1, $padding, '0', STR_PAD_LEFT);
+            return str_replace('{serial}', $next, $base . $next);
+        });
     }
 }

@@ -20,23 +20,27 @@ class QueueNumber
 
         $prefix = $params['prefix'] ?? 'REG';
         $date = $params['date'] ?? date('Y-m-d');
-        $latest = DB::table($table)
-            ->where($columnDate, $date)
-            ->orderBy($column, 'desc')
-            ->value($column);
-        $serial = 1;
-        if ($latest) {
-            preg_match('/(\d{'.$padding.'})$/', $latest, $matches);
-            if (isset($matches[1])) {
-                $serial = (int)$matches[1] + 1;
-            }
-        }
-        $serialFormatted = str_pad($serial, $padding, '0', STR_PAD_LEFT);
-        $replacements = [
-            '{prefix}' => $prefix,
-            '{serial}' => $serialFormatted,
-        ];
+        return DB::transaction(function () use ($table, $column, $columnDate, $padding, $prefix, $date, $format) {
+            $latest = DB::table($table)
+                ->whereDate($columnDate, $date)
+                ->orderByDesc($column)
+                ->lockForUpdate()
+                ->first();
 
-        return str_replace(array_keys($replacements), array_values($replacements), $format);
+            $serial = 1;
+            if ($latest) {
+                preg_match('/(\d{' . $padding . '})$/', $latest->$column, $matches);
+                if (isset($matches[1])) {
+                    $serial = (int) $matches[1] + 1;
+                }
+            }
+            $serialFormatted = str_pad($serial, $padding, '0', STR_PAD_LEFT);
+            $replacements = [
+                '{prefix}' => $prefix,
+                '{serial}' => $serialFormatted,
+            ];
+
+            return str_replace(array_keys($replacements), array_values($replacements), $format);
+        });
     }
 }

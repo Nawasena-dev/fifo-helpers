@@ -33,7 +33,6 @@ class RegistrationNumber
         );
         return DB::transaction(function () use ($table, $column, $columnDate, $date, $base, $padding) {
             $latest = DB::table($table)
-                ->whereDate($columnDate, $date)
                 ->where($column, 'like', $base . '%')
                 ->orderByDesc($column)
                 ->lockForUpdate()
